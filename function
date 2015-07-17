@@ -1,0 +1,33 @@
+USE [DatabaseName]
+GO
+
+SET ANSI_NULLS ON
+GO
+SET QUOTED_IDENTIFIER ON
+GO
+
+CREATE FUNCTION [Reporting].[UnderstandingPerTopic]
+    (
+      @teamId UNIQUEIDENTIFIER ,
+      @includeDescendants BIT = 1 ,
+      @requesterId UNIQUEIDENTIFIER ,
+      @languageId INT = 1
+	)
+RETURNS TABLE
+AS
+RETURN
+    ( SELECT    [GivenName] + SPACE(1) + [FamilyName] AS Name ,
+                [Username] ,
+                [MD].[Name] AS ModuleName ,
+                [TLM].[Name] AS TopicName ,
+                [NormalizedUnderstanding] ,
+                [UT].[Confidence]
+      FROM      [Run].[UserTopic] AS UT
+                INNER JOIN [User].[UserProfile] AS UP ON [UP].[UserId] = [UT].[UserId]
+                INNER JOIN [DM].[AssessmentStatus] AS [AS] ON [AS].[AssessmentStatusId] = [UT].[AssessmentStatusId]
+                LEFT JOIN [Run].[TopicLanguageMap] AS TLM ON [TLM].[TopicId] = [UT].[TopicId]
+                INNER JOIN [Run].[UserModule] AS UM ON [UM].[UserModuleId] = [UT].[UserModuleId]
+                INNER JOIN [Run].[ModuleDetails] AS MD ON [MD].[ModuleDetailsId] = [UM].[ModuleDetailsId]
+      ORDER BY  Name ,
+                [MD].[Name]
+    )
